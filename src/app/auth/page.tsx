@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { login, signUp } from "./action"
 import { Button } from "@/components/ui/button"
@@ -9,13 +9,21 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Code2, AlertCircle, Loader2 } from "lucide-react"
 
+
 export default function AuthPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#fafafa]">Loading Auth...</div>}>
+            <AuthContent />
+        </Suspense>
+    )
+}
+
+
+function AuthContent() {
     const [mode, setMode] = useState<'login' | 'signup'>('login')
     const [loading, setLoading] = useState(false)
     const searchParams = useSearchParams()
     const error = searchParams.get('error')
-
-    const handleSubmit = () => setLoading(true)
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#fafafa] px-4">
