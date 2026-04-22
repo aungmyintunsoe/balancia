@@ -2,64 +2,112 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { generateObject } from "ai"
+import { z } from "zod"
+import { ilmu, ILMU_MODEL } from "@/lib/ilmu"
 
-export async function generateMockProject(formData: FormData) {
+export async function generateProject(formData: FormData) {
     const supabase = await createClient()
     
     const vagueGoalText = formData.get('vagueGoalText') as string
     const orgId = formData.get('orgId') as string
 
-    // 1. Initial Insert: Create the project entry
+    // 1. Context Gathering: Fetch team roster and skills
+    // We fetch user_id and their related skills
+    const { data: teamData, error: teamError } = await supabase
+        .from('organization_members')
+        .select(`
+            user_id,
+            employee_skills (
+                skill_name,
+                proficiency_level
+            )
+        `)
+        .eq('org_id', orgId);
+
+    if (teamError) throw teamError;
+
+    // 2. Initial Insert: Create the project entry
     const { data: project, error: projError } = await supabase
         .from('projects')
         .insert({
             org_id: orgId,
             vague_goal_text: vagueGoalText,
-            status: 'active' // In a real app we'd start at 'analyzing'
+            status: 'analyzing' 
         })
         .select()
         .single()
 
     if (projError) throw projError
 
-    // 2. SIMULATE AI THINKING (2-second delay)
-    await new Promise(res => setTimeout(res, 2000))
+    try {
+        // 3. The AI Call: Using 'Opti' the AI Tech Lead
+        const { object } = await generateObject({
+            model: ilmu(ILMU_MODEL),
+            system: `You are 'Opti', an AI Tech Lead. Break the user's project goal into 2-3 structured goals, and 2-4 micro-tasks per goal. 
+            You MUST assign each task to a specific user ID from the provided team roster based on their skills. 
+            Return ONLY valid JSON matching the schema.`,
+            prompt: `Project Goal: "${vagueGoalText}"
+            
+            Team Roster with Skills:
+            ${JSON.stringify(teamData, null, 2)}
+            
+            Generate the structured roadmap.`,
+            schema: z.object({
+                goals: z.array(z.object({
+                    description: z.string(),
+                    tasks: z.array(z.object({
+                        description: z.string(),
+                        estimated_hours: z.number(),
+                        assigned_to: z.string().uuid()
+                    }))
+                }))
+            }),
+        });
 
-    // 3. MOCK DATA (In Phase 3, this will come from an LLM)
-    const mockGoals = [
-        { description: "Phase 1: Tech Architecture & Research" },
-        { description: "Phase 2: UI/UX Implementation" }
-    ]
+        // 4. Database Execution: Batch insert goals and tasks
+        for (const goal of object.goals) {
+            const { data: insertedGoal, error: goalError } = await supabase
+                .from('structured_goals')
+                .insert({
+                    project_id: project.id,
+                    org_id: orgId,
+                    description: goal.description
+                })
+                .select()
+                .single()
 
-    // 4. Batch Insert Goals
-    for (const goal of mockGoals) {
-        const { data: insertedGoal, error: goalError } = await supabase
-            .from('structured_goals')
-            .insert({
-                project_id: project.id,
-                org_id: orgId,
-                description: goal.description
-            })
-            .select()
-            .single()
+            if (goalError) throw goalError
 
-        if (goalError) throw goalError
-
-        // 5. Create 2 tasks for each goal
-        await supabase.from('tasks').insert([
-            {
+            // Map goal ID to tasks and insert
+            const tasksToInsert = goal.tasks.map(t => ({
+                ...t,
                 goal_id: insertedGoal.id,
                 org_id: orgId,
-                description: `Draft requirements for ${goal.description}`,
-                estimated_hours: 4
-            },
-            {
-                goal_id: insertedGoal.id,
-                org_id: orgId,
-                description: `Execute core development for ${goal.description}`,
-                estimated_hours: 8
-            }
-        ])
+                status: 'todo'
+            }));
+
+            const { error: tasksError } = await supabase
+                .from('tasks')
+                .insert(tasksToInsert);
+
+            if (tasksError) throw tasksError;
+        }
+
+        // 5. Update project status to active
+        await supabase
+            .from('projects')
+            .update({ status: 'active' })
+            .eq('id', project.id);
+
+    } catch (error) {
+        console.error("AI Generation Error:", error);
+        // Update project status to failed if AI or DB fails
+        await supabase
+            .from('projects')
+            .update({ status: 'failed' })
+            .eq('id', project.id);
+        throw error;
     }
 
     revalidatePath(`/org/${orgId}/dashboard`)

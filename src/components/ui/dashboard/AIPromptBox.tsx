@@ -4,7 +4,7 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2 } from "lucide-react";
-import { generateMockProject } from "@/app/actions";
+import { generateProject } from "@/app/actions";
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -29,7 +29,7 @@ function SubmitButton() {
 export default function AIPromptBox({ orgId }: { orgId: string }) {
     // We use a hidden input to pass the orgId to the server action
     return (
-        <form action={generateMockProject} className="space-y-4">
+        <form action={generateProject} className="space-y-4">
             <input type="hidden" name="orgId" value={orgId} />
 
             <div className="space-y-2">
