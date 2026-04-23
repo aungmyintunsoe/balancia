@@ -11,9 +11,10 @@ import {
     DialogTrigger,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { Sparkles, Loader2, UserPlus, Info, CheckCircle2 } from "lucide-react";
-import { generatePivotStrategy, assignTask } from "@/app/actions/taskActions";
+import { Sparkles, Loader2, UserPlus, Info, CheckCircle2, AlertTriangle } from "lucide-react";
+import { generatePivotStrategy, assignTask } from "../../../app/actions/taskActions";
 import { Badge } from "@/components/ui/badge";
+import CopyErrorButton from "./CopyErrorButton";
 
 interface PivotRecommendation {
     recommended_user_id: string;
@@ -25,13 +26,17 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
     const [loading, setLoading] = useState(false);
     const [applying, setApplying] = useState(false);
     const [recommendation, setRecommendation] = useState<PivotRecommendation | null>(null);
+    const [error, setError] = useState<{ message: string, stack?: string } | null>(null);
     const [open, setOpen] = useState(false);
 
     async function handleGetStrategy() {
         setLoading(true);
+        setError(null);
         const result = await generatePivotStrategy(taskId, orgId);
         if (result.success && result.recommendation) {
             setRecommendation(result.recommendation as PivotRecommendation);
+        } else {
+            setError({ message: result.error || "An unknown error occurred", stack: (result as any).stack });
         }
         setLoading(false);
     }
@@ -39,10 +44,13 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
     async function handleApply() {
         if (!recommendation) return;
         setApplying(true);
+        setError(null);
         const result = await assignTask(taskId, recommendation.recommended_user_id, orgId);
         if (result.success) {
             setOpen(false);
             setRecommendation(null);
+        } else {
+            setError({ message: result.error || "Unable to apply reassignment." });
         }
         setApplying(false);
     }
@@ -50,9 +58,9 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button 
-                    variant="outline" 
-                    size="sm" 
+                <Button
+                    variant="outline"
+                    size="sm"
                     className="text-xs font-bold border-red-200 text-red-600 hover:bg-red-50"
                     onClick={() => {
                         if (!recommendation) handleGetStrategy();
@@ -64,7 +72,7 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-purple-500" />
+                        <Sparkles className="h-5 w-5 text-emerald-500" />
                         AI Pivot Strategy
                     </DialogTitle>
                     <DialogDescription>
@@ -75,20 +83,40 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
                 <div className="py-4 space-y-4">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
                             <p className="text-sm font-medium text-slate-500 italic">Opti is analyzing team workload & skills...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="bg-red-50 p-5 rounded-2xl border border-red-100 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-red-900">AI Pivot Failed</p>
+                                    <p className="text-xs text-red-800/80 leading-relaxed">
+                                        {error.message}
+                                    </p>
+                                    <CopyErrorButton error={error.message} stack={error.stack || ''} />
+                                    <Button
+                                        variant="link"
+                                        onClick={handleGetStrategy}
+                                        className="p-0 h-auto text-xs text-red-600 font-bold mt-2"
+                                    >
+                                        Try again
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     ) : recommendation ? (
                         <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recommended New Assignee</span>
-                                    <Badge variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none">
+                                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">
                                         Skill Match 98%
                                     </Badge>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">
+                                    <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
                                         {recommendation.recommended_user_name[0]}
                                     </div>
                                     <div>
@@ -98,11 +126,11 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
                                 </div>
                             </div>
 
-                            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 flex gap-3">
-                                <Info className="h-5 w-5 text-purple-500 shrink-0" />
+                            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex gap-3">
+                                <Info className="h-5 w-5 text-emerald-500 shrink-0" />
                                 <div className="space-y-1">
-                                    <p className="text-xs font-bold text-purple-900">Why this pivot?</p>
-                                    <p className="text-xs text-purple-800 leading-relaxed">
+                                    <p className="text-xs font-bold text-emerald-900">Why this pivot?</p>
+                                    <p className="text-xs text-emerald-800 leading-relaxed">
                                         {recommendation.reasoning}
                                     </p>
                                 </div>
@@ -119,10 +147,10 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
                     <Button variant="ghost" onClick={() => setOpen(false)} className="text-xs">
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={handleApply} 
+                    <Button
+                        onClick={handleApply}
                         disabled={applying || !recommendation}
-                        className="bg-purple-600 hover:bg-purple-700 text-xs font-bold"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-xs font-bold"
                     >
                         {applying ? (
                             <>

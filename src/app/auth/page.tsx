@@ -5,9 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { login, signUp } from "./action"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Code2, AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 
 
 export default function AuthPage() {
@@ -26,25 +24,27 @@ function AuthContent() {
     const error = searchParams.get('error')
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[#fafafa] px-4">
-            <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
-                <CardHeader className="space-y-1 text-center">
-                    <div className="flex justify-center mb-4">
-                        <div className="bg-primary/10 p-3 rounded-2xl">
-                            <Code2 className="h-8 w-8 text-primary" />
-                        </div>
-                    </div>
-                    <CardTitle className="text-3xl font-extrabold tracking-tight italic">
-                        {mode === 'login' ? 'Welcome Back' : 'Join HackFlow'}
-                    </CardTitle>
-                    <CardDescription>
+        <div className="min-h-screen bg-[#f4f4f4] px-6 py-8 md:px-12">
+            <div className="mx-auto w-full max-w-5xl">
+                <div className="mb-16 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-md bg-[#43e400] text-black font-black flex items-center justify-center">B</div>
+                    <span className="text-4xl font-black text-slate-900">Balancia</span>
+                </div>
+                <div className="mb-10">
+                    <p className="text-slate-400 uppercase font-semibold tracking-wide text-sm">
+                        {mode === 'login' ? 'Sign In' : 'Create Account'}
+                    </p>
+                    <h1 className="text-6xl font-black text-[#43e400] mt-2 leading-none">
+                        {mode === 'login' ? 'WELCOME BACK' : 'BUILD A BALANCED TEAM'}
+                    </h1>
+                    <p className="text-3xl mt-4 text-slate-400 font-bold">
                         {mode === 'login'
-                            ? 'Enter your credentials to access your workspaces'
-                            : 'Start building and managing your dream team'}
-                    </CardDescription>
-                </CardHeader>
-
+                            ? 'Sign In as a manager or as an employee invited by your manager.'
+                            : 'Manager account can invite teammates with one click'}
+                    </p>
+                </div>
                 <form
+                    className="space-y-6"
                     action={async (formData) => {
                         setLoading(true)
                         if (mode === 'login') await login(formData)
@@ -52,47 +52,53 @@ function AuthContent() {
                         setLoading(false)
                     }}
                 >
-                    <CardContent className="space-y-4">
-                        {error && (
-                            <div className="flex items-center gap-2 bg-destructive/10 text-destructive text-sm p-3 rounded-lg border border-destructive/20 animate-in fade-in zoom-in duration-200">
-                                <AlertCircle className="h-4 w-4" />
-                                <p>{error}</p>
-                            </div>
-                        )}
-
-                        {mode === 'signup' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="fullName">Full Name</Label>
-                                <Input id="fullName" name="fullName" placeholder="John Doe" required />
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input id="email" name="email" type="email" placeholder="name@company.com" required />
+                    {error && (
+                        <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm p-3 rounded-xl border border-red-100 animate-in fade-in zoom-in duration-200">
+                            <AlertCircle className="h-4 w-4" />
+                            <p>{error}</p>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input id="password" name="password" type="password" required />
-                        </div>
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
-                        <Button className="w-full h-11 font-bold text-base" type="submit" disabled={loading}>
+                    )}
+                    {mode === 'signup' && (
+                        <Input
+                            id="fullName"
+                            name="fullName"
+                            placeholder="Your full name"
+                            required
+                            className="h-14 bg-white border-none shadow-sm text-lg"
+                        />
+                    )}
+                    <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="you@company.com"
+                        required
+                        className="h-14 bg-white border-none shadow-sm text-lg"
+                    />
+                    <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Password (min 6)"
+                        required
+                        className="h-14 bg-white border-none shadow-sm text-lg"
+                    />
+                    <Button className="w-full h-14 font-black text-2xl bg-[#43e400] hover:bg-[#33c700] text-white" type="submit" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {mode === 'login' ? 'Sign In' : 'Register Now'}
+                            {mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
                         </Button>
-                        <button
-                            type="button"
-                            disabled={loading}
-                            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                            className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium border-b border-transparent hover:border-primary"
-                        >
-                            {mode === 'login'
-                                ? "Don't have an account? Sign up"
-                                : "Already have an account? Log in"}
-                        </button>
-                    </CardFooter>
+                    <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                        className="text-sm text-slate-500 hover:text-[#43e400] transition-colors font-semibold"
+                    >
+                        {mode === 'login'
+                            ? "New manager? Create an account"
+                            : "Already have an account? Sign in"}
+                    </button>
                 </form>
-            </Card>
+            </div>
         </div>
     )
 }

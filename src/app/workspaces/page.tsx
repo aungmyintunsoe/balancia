@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/server"
-import { LayoutGrid, PlusCircle, UserPlus, LogOut, CheckCircle2 } from "lucide-react"
+import { LayoutGrid, PlusCircle, UserPlus, LogOut, CheckCircle2, Leaf } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { CopyButton } from "@/components/ui/dashboard/CopyButton"
+import { unwrapRelation } from "@/lib/supabase/relations"
 
 export default async function WorkspacesPage() {
     const supabase = await createClient()
@@ -30,17 +32,17 @@ export default async function WorkspacesPage() {
 
     return (
         <div className="min-h-screen bg-[#fcfcfc] dark:bg-slate-950">
-            <nav className="border-b bg-white dark:bg-slate-900 px-6 py-3 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-                <div className="flex items-center gap-2 font-bold text-lg">
-                    <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-                        <LayoutGrid className="h-5 w-5" />
+            <nav className="border-b bg-white px-6 py-3 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                    <div className="bg-emerald-600 text-white p-1.5 rounded-lg shadow-md shadow-emerald-100">
+                        <Leaf className="h-5 w-5 fill-current" />
                     </div>
-                    <span>HackFlow</span>
+                    <span className="text-xl font-black tracking-tight text-slate-800">Balancia</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
+                    <span className="text-xs font-bold text-slate-400 hidden sm:inline uppercase tracking-widest">{user?.email}</span>
                     <form action={signOut}>
-                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-500 transition-colors">
                             <LogOut className="h-4 w-4 mr-2" /> Sign Out
                         </Button>
                     </form>
@@ -55,13 +57,16 @@ export default async function WorkspacesPage() {
                     </h2>
                     {memberships && memberships.length > 0 ? (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {memberships.map((m: any) => (
-                                <Link key={m.organizations.id} href={`/org/${m.organizations.id}/dashboard`}>
+                            {memberships.map((m: any) => {
+                                const org = unwrapRelation(m.organizations);
+                                if (!org) return null;
+                                return (
+                                <Link key={org.id} href={`/org/${org.id}/dashboard`}>
                                     <Card className="hover:border-primary transition-colors cursor-pointer group h-full">
                                         <CardHeader className="pb-3">
                                             <div className="flex justify-between items-start">
                                                 <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                                                    {m.organizations.name}
+                                                    {org.name}
                                                 </CardTitle>
                                                 <span className="text-[10px] uppercase font-bold px-2 py-1 bg-slate-100 rounded text-slate-500">
                                                     {m.role}
@@ -73,12 +78,14 @@ export default async function WorkspacesPage() {
                                                 <CheckCircle2 className="h-3 w-3 text-green-500" /> Member since today
                                             </p>
                                         </CardContent>
-                                        <CardFooter className="pt-0">
-                                            <span className="text-xs font-mono text-slate-400">Code: {m.organizations.join_code}</span>
+                                        <CardFooter className="pt-0 flex items-center justify-between">
+                                            <span className="text-xs font-mono text-slate-400">Code: {org.join_code}</span>
+                                            <CopyButton value={org.join_code} />
                                         </CardFooter>
                                     </Card>
                                 </Link>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed flex flex-col items-center">

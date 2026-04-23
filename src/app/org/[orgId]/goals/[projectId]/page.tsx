@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Target, ArrowLeft, CheckCircle2, Clock, Users, Zap } from "lucide-react";
 import Link from "next/link";
+import { unwrapRelation } from "@/lib/supabase/relations";
 
 export default async function GoalDetailPage(props: { params: Promise<{ orgId: string; projectId: string }> }) {
     const { orgId, projectId } = await props.params;
@@ -23,7 +24,7 @@ export default async function GoalDetailPage(props: { params: Promise<{ orgId: s
             *,
             structured_goals (
                 id,
-                title,
+                description,
                 tasks (
                     *
                 )
@@ -38,6 +39,11 @@ export default async function GoalDetailPage(props: { params: Promise<{ orgId: s
         .from('organization_members')
         .select(`user_id, profiles(full_name, email)`)
         .eq('org_id', orgId);
+
+    const normalizedMembers = (members || []).map((member: any) => ({
+        ...member,
+        profiles: unwrapRelation(member.profiles),
+    }));
 
     const allTasks = project.structured_goals?.flatMap((g: any) => g.tasks) ?? [];
     const completedCount = allTasks.filter((t: any) => t.status === 'done').length;
@@ -93,7 +99,7 @@ export default async function GoalDetailPage(props: { params: Promise<{ orgId: s
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                     {[
                         { icon: CheckCircle2, label: "Tasks", value: `${completedCount}/${totalCount}` },
-                        { icon: Users, label: "Team", value: `${(members || []).length} members` },
+                        { icon: Users, label: "Team", value: `${normalizedMembers.length} members` },
                         { icon: Clock, label: "Deadline", value: new Date(new Date(project.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() },
                         { icon: Zap, label: "Velocity", value: `${progress}%` },
                     ].map(({ icon: Icon, label, value }) => (
@@ -116,7 +122,7 @@ export default async function GoalDetailPage(props: { params: Promise<{ orgId: s
                     <section key={goal.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${gi * 100}ms` }}>
                         <div className="flex items-center gap-2 mb-4">
                             <div className="h-px flex-1 bg-slate-100" />
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 px-2">{goal.title}</h2>
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 px-2">{goal.description}</h2>
                             <div className="h-px flex-1 bg-slate-100" />
                         </div>
 
@@ -127,7 +133,7 @@ export default async function GoalDetailPage(props: { params: Promise<{ orgId: s
                                         key={task.id}
                                         task={task}
                                         isAdmin={isAdmin}
-                                        members={members || []}
+                                        members={normalizedMembers}
                                     />
                                 ))}
                             </div>

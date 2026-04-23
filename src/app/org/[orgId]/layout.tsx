@@ -4,8 +4,14 @@ import Link from "next/link";
 import { signOut } from "@/app/workspaces/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, LogOut, Cpu } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { NavLinks } from "@/components/NavLinks";
+import { unwrapRelation } from "@/lib/supabase/relations";
+
+type OrganizationRelation = {
+    name: string;
+    join_code: string;
+};
 
 export default async function OrgLayout({
     children,
@@ -28,56 +34,43 @@ export default async function OrgLayout({
 
     if (!membership) redirect("/workspaces");
 
-    const orgName = (membership.organizations as any)?.name ?? "Workspace";
-    const joinCode = (membership.organizations as any)?.join_code ?? "";
+    const organization = unwrapRelation<OrganizationRelation>(membership.organizations as OrganizationRelation | OrganizationRelation[] | null);
+    const orgName = organization?.name ?? "Workspace";
+    const joinCode = organization?.join_code ?? "";
 
     return (
-        <div className="min-h-screen flex flex-col bg-background">
-            {/* ── Top Navbar ── */}
-            <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
-                <div className="mx-auto flex h-14 max-w-screen-xl items-center justify-between px-6 gap-4">
-
-                    {/* Left: Logo + Org Name */}
-                    <Link
-                        href={`/org/${orgId}/dashboard`}
-                        className="flex items-center gap-2 font-bold text-lg shrink-0"
-                    >
-                        <div className="bg-[#22c55e] text-white p-1.5 rounded-lg">
-                            <Cpu className="h-4 w-4" />
-                        </div>
-                        <span className="text-[#22c55e]">Balancia</span>
-                        <span className="text-slate-300 font-light hidden sm:inline">|</span>
-                        <span className="text-slate-600 text-sm font-medium hidden sm:inline truncate max-w-[140px]">
-                            {orgName}
-                        </span>
-                    </Link>
-
-                    {/* Center: Nav Links */}
-                    <NavLinks orgId={orgId} />
-
-                    {/* Right: Join Code + Sign Out */}
-                    <div className="flex items-center gap-2 shrink-0">
-                        <Badge
-                            variant="outline"
-                            className="font-mono tracking-widest text-xs border-[#22c55e] text-[#22c55e] cursor-pointer
-                            hover:bg-green-50 transition-colors hidden sm:flex"
-                            title="Click to copy join code"
-                        >
-                            {joinCode}
-                            <Copy className="ml-1.5 h-3 w-3" />
-                        </Badge>
-                        <form action={signOut}>
-                            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-red-500">
-                                <LogOut className="h-4 w-4" />
-                            </Button>
-                        </form>
+        <div className="min-h-screen flex bg-[#f8f8f8]">
+            <aside className="w-64 shrink-0 bg-white border-r border-slate-200 flex flex-col">
+                <Link
+                    href={`/org/${orgId}/dashboard`}
+                    className="h-20 px-5 border-b border-slate-200 flex items-center gap-3"
+                >
+                    <div className="h-10 w-10 rounded-md bg-[#43e400] text-slate-900 flex items-center justify-center font-black">
+                        B
                     </div>
+                    <span className="text-3xl font-black text-slate-900 leading-none">Balancia</span>
+                </Link>
 
+                <div className="p-4 flex-1">
+                    <NavLinks orgId={orgId} />
                 </div>
-            </header>
 
-            {/* ── Page Content ── */}
-            <main className="flex-1">
+                <div className="p-4 border-t border-slate-100 space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {orgName}
+                    </div>
+                    <Badge variant="outline" className="font-mono tracking-widest text-xs border-[#22c55e] text-[#22c55e]">
+                        {joinCode}
+                    </Badge>
+                    <form action={signOut}>
+                        <Button variant="ghost" size="sm" className="w-full justify-start text-slate-500 hover:text-red-500">
+                            <LogOut className="mr-2 h-4 w-4" /> Sign out
+                        </Button>
+                    </form>
+                </div>
+            </aside>
+
+            <main className="flex-1 min-w-0">
                 {children}
             </main>
         </div>

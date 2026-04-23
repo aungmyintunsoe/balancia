@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, TrendingUp, Users, ArrowRight, Clock, CheckCircle2, Shield } from "lucide-react";
+import { unwrapRelation } from "@/lib/supabase/relations";
 
 export default async function AnalyticsPage(props: { params: Promise<{ orgId: string }> }) {
     const { orgId } = await props.params;
@@ -21,6 +22,7 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
 
     // Build detailed member stats
     const memberStats = (members || []).map((m: any) => {
+        const profile = unwrapRelation(m.profiles);
         const userTasks = tasks?.filter(t => t.assigned_to === m.user_id) || [];
         const active = userTasks.filter(t => t.status === 'in_progress' || t.status === 'blocked').length;
         const done = userTasks.filter(t => t.status === 'done').length;
@@ -29,8 +31,8 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
         const estimatedHours = userTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
         const isOverwork = active >= 3 || estimatedHours > 40;
         return {
-            name: m.profiles?.full_name || 'Unknown',
-            email: m.profiles?.email || '',
+            name: profile?.full_name || profile?.email || 'Unknown',
+            email: profile?.email || '',
             active, done, total, productivity, estimatedHours, isOverwork,
         };
     }).sort((a, b) => (b.isOverwork ? 1 : 0) - (a.isOverwork ? 1 : 0) || b.productivity - a.productivity);

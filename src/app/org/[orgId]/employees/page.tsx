@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Clock, CheckCircle2, BrainCircuit } from "lucide-react";
+import { CopyButton } from "@/components/ui/dashboard/CopyButton";
+import { unwrapRelation } from "@/lib/supabase/relations";
 
 export default async function EmployeesPage(props: { params: Promise<{ orgId: string }> }) {
     const { orgId } = await props.params;
@@ -12,12 +14,13 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
 
     if (!user) redirect("/auth");
 
-    // Fetch members with profiles and task counts
-    const { data: members, error } = await supabase
+    // Fetch members with profiles, task counts, and the org join code
+    const { data: membersData, error } = await supabase
         .from("organization_members")
         .select(`
             role,
             user_id,
+            organizations ( join_code ),
             profiles (
                 full_name,
                 email,
@@ -26,7 +29,11 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
         `)
         .eq("org_id", orgId);
 
-    if (error || !members) redirect("/workspaces");
+    if (error || !membersData) redirect("/workspaces");
+
+    const members = membersData || [];
+    const firstOrg = unwrapRelation((members[0] as any)?.organizations);
+    const joinCode = firstOrg?.join_code || "UNKNOWN";
 
     // Fetch task stats for everyone to calculate productivity
     const { data: tasks } = await supabase
@@ -43,20 +50,21 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
     };
 
     return (
-        <div className="p-8 max-w-screen-xl mx-auto">
+        <div className="p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500">
             <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
-                    <p className="text-slate-500">Manage employee profiles and track performance</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Team Members</h1>
+                    <p className="text-slate-500 text-sm">Manage employee profiles and track performance</p>
                 </div>
                 <div className="flex items-center gap-3">
-                     <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-center">
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Org Join Code</p>
-                        <code className="text-sm font-mono font-bold text-[#22c55e] tracking-widest uppercase">
-                            {/* We'll assume the join code is passed or fetched if needed, 
-                                but for now let's just use the prominent button style from wireframe */}
-                            Share code to add
-                        </code>
+                     <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                        <div>
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Org Join Code</p>
+                            <code className="text-sm font-mono font-black text-slate-700 tracking-widest uppercase">
+                                {joinCode}
+                            </code>
+                        </div>
+                        <CopyButton value={joinCode} />
                     </div>
                 </div>
             </header>
@@ -64,7 +72,8 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
                 {members.map((member: any) => {
                     const stats = getMemberStats(member.user_id);
-                    const initials = member.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || '??';
+                    const profile = unwrapRelation(member.profiles);
+                    const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || '??';
                     
                     // Mock data for wireframe "Wow" factor
                     const status = stats.total > 2 ? 'Busy' : 'Available';
@@ -78,17 +87,17 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
                                     <div className="flex justify-between items-start mb-6">
                                         <div className="flex gap-4">
                                             <Avatar className="h-16 w-16 rounded-2xl border-2 border-white shadow-sm">
-                                                <AvatarImage src={member.profiles?.avatar_url} />
+                                                <AvatarImage src={profile?.avatar_url} />
                                                 <AvatarFallback className="bg-primary/5 text-primary font-bold text-xl">{initials}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <h3 className="text-xl font-bold">{member.profiles?.full_name || "Unknown Member"}</h3>
+                                                <h3 className="text-xl font-bold">{profile?.full_name || "Unknown Member"}</h3>
                                                 <p className="text-xs text-slate-400 font-medium mb-2">{member.role.toUpperCase()}</p>
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="outline" className={`text-[10px] uppercase font-bold px-2 py-0 ${status === 'Busy' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
                                                         {status}
                                                     </Badge>
-                                                    <span className="text-[10px] text-slate-300 font-medium">{member.profiles?.email}</span>
+                                                    <span className="text-[10px] text-slate-300 font-medium">{profile?.email}</span>
                                                 </div>
                                             </div>
                                         </div>

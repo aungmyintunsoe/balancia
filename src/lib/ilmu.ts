@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 export const ilmu = createOpenAI({
   apiKey: process.env.ILMU_API_KEY,
   baseURL: 'https://api.ilmu.ai/v1',
+
 });
 
 // Standard OpenAI Client (just in case)
@@ -14,5 +15,5 @@ export const ilmuClient = new OpenAI({
 });
 
 // Default models
-export const ILMU_MODEL = 'nemo-super'; // High quality model
-export const ILMU_FAST_MODEL = 'ilmu-nemo-nano'; // Fast model
+export const ILMU_MODEL = 'ilmu-glm-5.1';
+export const ILMU_FAST_MODEL = ILMU_MODEL;
