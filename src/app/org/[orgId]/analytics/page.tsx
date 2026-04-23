@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, TrendingUp, Users, ArrowRight, Clock, CheckCircle2, Shield, Search } from "lucide-react";
 import { unwrapRelation } from "@/lib/supabase/relations";
 import { runSkillAudit } from "@/app/actions/auditActions";
+import { redistributeTasks } from "@/app/actions/taskActions";
 
 export default async function AnalyticsPage(props: { params: Promise<{ orgId: string }> }) {
     const { orgId } = await props.params;
@@ -15,7 +16,7 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
     // Fetch members with their task loads
     const { data: members } = await supabase
         .from("organization_members")
-        .select(`user_id, profiles(full_name, email)`)
+        .select(`user_id, profiles(full_name, email, bandwidth_hours)`) 
         .eq("org_id", orgId);
 
     const { data: tasks } = await supabase
@@ -23,6 +24,7 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
 
     // Build detailed member stats
     const memberStats = (members || []).map((m: any) => {
+        
         const profile = unwrapRelation(m.profiles);
         const userTasks = tasks?.filter(t => t.assigned_to === m.user_id) || [];
         const active = userTasks.filter(t => t.status === 'in_progress' || t.status === 'blocked').length;
@@ -30,8 +32,10 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
         const total = userTasks.length;
         const productivity = total > 0 ? Math.round((done / total) * 100) : 0;
         const estimatedHours = userTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
-        const isOverwork = active >= 3 || estimatedHours > 40;
+        const userCapacity = profile?.bandwidth_hours || 40; 
+        const isOverwork = active >= 3 || estimatedHours > userCapacity;
         return {
+            userId: m.user_id, // <-- ADD THIS LINE
             name: profile?.full_name || profile?.email || 'Unknown',
             email: profile?.email || '',
             active, done, total, productivity, estimatedHours, isOverwork,
@@ -105,9 +109,18 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                                     </p>
                                 </div>
                             </div>
-                            <Button variant="destructive" size="sm" className="font-bold shadow-md shadow-red-200 shrink-0">
-                                Redistribute Tasks <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                            </Button>
+                            
+                            {/* --- THE UPDATED BUTTON SECTION --- */}
+                            <form action={async () => {
+                                'use server';
+                                await redistributeTasks(orgId, m.userId); 
+                            }}>
+                                <Button type="submit" variant="destructive" size="sm" className="font-bold shadow-md shadow-red-200 shrink-0">
+                                    Redistribute Tasks <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                                </Button>
+                            </form>
+                            {/* ---------------------------------- */}
+                            
                         </div>
                     ))}
                 </section>

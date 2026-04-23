@@ -312,3 +312,37 @@ export async function syncSkills(skills: { skill_name: string; proficiency_level
     }
     return { success: true };
 }
+
+// ==========================================
+// NEW FUNCTION ADDED BELOW:
+// ==========================================
+
+export async function redistributeTasks(orgId: string, overworkedUserId: string) {
+    const supabase = await createClient();
+
+    console.log(`Starting task redistribution for user: ${overworkedUserId}`);
+
+    // Step 1: Find tasks that are assigned to this person and are currently active
+    // Step 2: Unassign them (set assigned_to to null) and set status back to 'todo'
+    const { error } = await supabase
+        .from('tasks')
+        .update({ 
+            assigned_to: null, 
+            status: 'todo' 
+        })
+        .eq('assigned_to', overworkedUserId)
+        .eq('org_id', orgId)
+        .in('status', ['in_progress', 'blocked']);
+
+    if (error) {
+        console.error("Failed to redistribute tasks:", error);
+        return { success: false, error: error.message };
+    }
+
+    // Step 3: Tell Next.js to refresh the relevant pages so the UI updates instantly!
+    revalidatePath(`/org/${orgId}/dashboard`);
+    revalidatePath(`/org/${orgId}/tasks`);
+    revalidatePath(`/org/${orgId}/analytics`);
+    
+    return { success: true };
+}
