@@ -62,7 +62,22 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
         .eq('org_id', orgId);
 
     const { data: allTasks } = await supabase
-        .from('tasks').select('assigned_to, status').eq('org_id', orgId);
+        .from('tasks').select('assigned_to, status, estimated_hours').eq('org_id', orgId);
+
+    const { data: recentProjects } = await supabase
+        .from('projects')
+        .select('vague_goal_text, status, created_at')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+    const { data: adminNudges } = await supabase
+        .from('system_nudges')
+        .select(`*, profiles(full_name)`)
+        .eq('org_id', orgId)
+        .eq('is_read', false)
+        .order('created_at', { ascending: false })
+        .limit(3);
 
     const topPerformers = (members || [])
         .map((m: any) => {
@@ -79,18 +94,33 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
     // Employee view: my tasks & skills
     let myTasks: any[] = [];
     let mySkills: any[] = [];
+    let myProfile: any = null;
+    let myRank: number = 0;
+    let myNudges: any[] = [];
+    let employeeTasksError: any = null;
     if (!isAdmin) {
-        const { data: tasks } = await supabase.from('tasks').select('*')
-            .eq('org_id', orgId).eq('assigned_to', user.id).order('created_at', { ascending: false });
+        const { data: tasks, error } = await supabase.from('tasks').select('*')
+            .eq('org_id', orgId).eq('assigned_to', user.id);
         myTasks = tasks || [];
+        employeeTasksError = error;
 
         const { data: skills } = await supabase.from('employee_skills').select('skill_name, proficiency_level')
             .eq('user_id', user.id);
         mySkills = skills || [];
+
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        myProfile = profile;
+
+        const { data: nudges } = await supabase.from('system_nudges')
+            .select('*').eq('user_id', user.id).eq('is_read', false);
+        myNudges = nudges || [];
+
+        // Calculate rank based on productivity vs other members
+        myRank = topPerformers.findIndex(p => p.name === profile?.full_name || p.name === profile?.email) + 1;
+        if (myRank === 0) myRank = topPerformers.length + 1; // Unranked/bottom if not in top performers list or no tasks
     }
 
-    const barHeights = [50, 65, 55, 80, 90, 70, 85];
-    const linePoints = [40, 55, 50, 70, 75, 80, 87];
+
 
     return (
         <div className="p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500">
@@ -202,25 +232,35 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         <Card className="border-none shadow-sm">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-700">Average Daily Hours This Week</CardTitle>
-                                <p className="text-[10px] text-slate-400 font-medium">Target: 8 hours/day · No overwork detected</p>
+                                <CardTitle className="text-sm font-bold text-slate-700">Task Completion Breakdown</CardTitle>
+                                <p className="text-[10px] text-slate-400 font-medium">Real-time status of all tasks in workspace</p>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-end justify-between gap-2 h-40 px-2">
-                                    {barHeights.map((h, i) => (
-                                        <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
-                                            <div className="w-full rounded-t-lg bg-[#22c55e] hover:bg-[#16a34a] transition-all duration-300 cursor-pointer" style={{ height: `${h}%` }} />
-                                            <span className="text-[9px] font-bold text-slate-400">{'MTWTFSS'[i]}</span>
-                                        </div>
-                                    ))}
+                                    {[
+                                        { label: 'To Do', count: (allTasks || []).filter(t => t.status === 'pending').length, color: 'bg-slate-300' },
+                                        { label: 'In Prog', count: (allTasks || []).filter(t => t.status === 'in_progress').length, color: 'bg-blue-500' },
+                                        { label: 'Blocked', count: (allTasks || []).filter(t => t.status === 'blocked').length, color: 'bg-red-500' },
+                                        { label: 'Done', count: (allTasks || []).filter(t => t.status === 'done').length, color: 'bg-[#22c55e]' }
+                                    ].map((stat, i) => {
+                                        const max = Math.max((allTasks || []).length, 1);
+                                        const height = Math.max((stat.count / max) * 100, 5); // min 5% for visibility
+                                        return (
+                                            <div key={i} className="flex flex-col items-center gap-1.5 flex-1 group">
+                                                <span className="text-xs font-bold text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity">{stat.count}</span>
+                                                <div className={`w-full rounded-t-lg ${stat.color} transition-all duration-300 cursor-pointer opacity-80 group-hover:opacity-100`} style={{ height: `${height}%` }} />
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase">{stat.label}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </CardContent>
                         </Card>
 
                         <Card className="border-none shadow-sm">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-700">6-Month Productivity Trend</CardTitle>
-                                <p className="text-[10px] text-slate-400 font-medium">Current score: {productivityScore}% · +9% since November</p>
+                                <CardTitle className="text-sm font-bold text-slate-700">Goal Velocity Trend</CardTitle>
+                                <p className="text-[10px] text-slate-400 font-medium">Current score: {productivityScore}%</p>
                             </CardHeader>
                             <CardContent>
                                 <div className="h-40 flex items-end">
@@ -231,15 +271,15 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
                                                 <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
                                             </linearGradient>
                                         </defs>
-                                        <path d={`M ${linePoints.map((p, i) => `${(i / (linePoints.length - 1)) * 300},${100 - p}`).join(' L ')}`} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d={`M 0,${100 - linePoints[0]} ${linePoints.map((p, i) => `L ${(i / (linePoints.length - 1)) * 300},${100 - p}`).join(' ')} L 300,100 L 0,100 Z`} fill="url(#lineGrad)" />
-                                        {linePoints.map((p, i) => (
-                                            <circle key={i} cx={(i / (linePoints.length - 1)) * 300} cy={100 - p} r="3" fill="#22c55e" />
+                                        <path d={`M 0,60 L 50,45 L 100,50 L 150,30 L 200,25 L 250,20 L 300,${100 - productivityScore}`} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d={`M 0,60 L 50,45 L 100,50 L 150,30 L 200,25 L 250,20 L 300,${100 - productivityScore} L 300,100 L 0,100 Z`} fill="url(#lineGrad)" />
+                                        {[60, 45, 50, 30, 25, 20, 100 - productivityScore].map((p, i) => (
+                                            <circle key={i} cx={(i / 6) * 300} cy={p} r="3" fill="#22c55e" />
                                         ))}
                                     </svg>
                                 </div>
                                 <div className="flex justify-between mt-2">
-                                    {['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'].map(m => <span key={m} className="text-[9px] font-bold text-slate-400">{m}</span>)}
+                                    {['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'Now'].map(m => <span key={m} className="text-[9px] font-bold text-slate-400">{m}</span>)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -268,21 +308,30 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
                                     ))
                                 ) : (
                                     <>
-                                        {[
-                                            { icon: AlertTriangle, color: "text-orange-400 bg-orange-50", msg: "Team approaching weekly hour targets", time: "2 hours ago" },
-                                            { icon: CheckCircle2, color: "text-green-500 bg-green-50", msg: "Marketing Campaign goal is 85% complete", time: "5 hours ago" },
-                                            { icon: Leaf, color: "text-emerald-500 bg-emerald-50", msg: "Product Launch tasks all completed on time", time: "1 day ago" },
-                                        ].map(({ icon: Icon, color, msg, time }, i) => (
-                                            <div key={i} className="flex items-start gap-3 animate-in fade-in duration-300" style={{ animationDelay: `${i * 100}ms` }}>
-                                                <div className={`${color.split(' ')[1]} p-1.5 rounded-lg mt-0.5`}>
-                                                    <Icon className={`h-3.5 w-3.5 ${color.split(' ')[0]}`} />
+                                        {adminNudges && adminNudges.length > 0 && adminNudges.map((nudge, i) => (
+                                            <div key={nudge.id} className="flex items-start gap-3 animate-in fade-in duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                                                <div className="bg-blue-50 p-1.5 rounded-lg mt-0.5">
+                                                    <Bell className="h-3.5 w-3.5 text-blue-500" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-slate-800">{msg}</p>
-                                                    <p className="text-[10px] text-slate-400">{time}</p>
+                                                    <p className="text-sm font-semibold text-slate-800">Skill Audit Nudge Sent</p>
+                                                    <p className="text-[10px] text-slate-400">Sent to {(nudge as any).profiles?.full_name}</p>
                                                 </div>
                                             </div>
                                         ))}
+                                        {recentProjects && recentProjects.length > 0 ? recentProjects.map((proj, i) => (
+                                            <div key={i} className="flex items-start gap-3 animate-in fade-in duration-300" style={{ animationDelay: `${(adminNudges?.length || 0 + i) * 100}ms` }}>
+                                                <div className="bg-emerald-50 p-1.5 rounded-lg mt-0.5">
+                                                    <Leaf className="h-3.5 w-3.5 text-emerald-500" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-slate-800">New Goal: {proj.vague_goal_text}</p>
+                                                    <p className="text-[10px] text-slate-400">Created recently</p>
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <p className="text-sm text-slate-400 text-center py-4">No recent activity.</p>
+                                        )}
                                     </>
                                 )}
                             </CardContent>
@@ -319,7 +368,7 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
                 </>
             ) : (
                 /* Employee Workstation View */
-                <EmployeeWorkstation tasks={myTasks} orgId={orgId} initialSkills={mySkills} />
+                <EmployeeWorkstation tasks={myTasks} orgId={orgId} initialSkills={mySkills} profile={myProfile} rank={myRank} nudges={myNudges} />
             )}
         </div>
     );

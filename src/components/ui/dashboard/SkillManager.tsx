@@ -12,7 +12,7 @@ interface Skill {
     proficiency_level: number;
 }
 
-export function SkillManager({ initialSkills }: { initialSkills: Skill[] }) {
+export function SkillManager({ initialSkills, orgId }: { initialSkills: Skill[]; orgId?: string }) {
     const [skills, setSkills] = useState<Skill[]>(initialSkills);
     const [newSkill, setNewSkill] = useState("");
     const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export function SkillManager({ initialSkills }: { initialSkills: Skill[] }) {
         setError(null);
         setSaved(false);
         try {
-            const result = await syncSkills(skills);
+            const result = await syncSkills(skills, orgId);
             if (!result.success) {
                 setError(result.error || "Unable to save skills.");
                 return;

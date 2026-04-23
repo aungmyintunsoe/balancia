@@ -13,12 +13,11 @@ export async function createWorkspace(formData: FormData) {
 
     const name = formData.get('name') as string
     const joinCode = generateJoinCode()
+    const orgId = crypto.randomUUID()
 
-    const { data: org, error: orgError } = await supabase
+    const { error: orgError } = await supabase
         .from('organizations')
-        .insert({ name, join_code: joinCode })
-        .select()
-        .single()
+        .insert({ id: orgId, name, join_code: joinCode })
 
     if (orgError) throw orgError
 
@@ -26,14 +25,14 @@ export async function createWorkspace(formData: FormData) {
         .from('organization_members')
         .insert({
             user_id: user.id,
-            org_id: org.id,
+            org_id: orgId,
             role: 'admin'
         })
 
     if (memberError) throw memberError
 
     revalidatePath('/workspaces')
-    redirect(`/org/${org.id}/dashboard`)
+    redirect(`/org/${orgId}/dashboard`)
 }
 
 export async function joinWorkspace(formData: FormData) {

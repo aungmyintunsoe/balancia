@@ -20,8 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export interface Task {
     id: string;
-    title: string;
-    description: string | null;
+    description: string;
     status: 'pending' | 'in_progress' | 'done' | 'blocked';
     assigned_to?: string | null;
     blocker_reason?: string | null;
@@ -86,9 +85,9 @@ export function TaskCard({ task, isAdmin, members }: TaskCardProps) {
                             <Clock className="w-3 h-3 mr-1" /> {task.estimated_hours || 0}H EST
                         </div>
                     </div>
-                    <CardTitle className="text-lg font-bold leading-tight">{task.title}</CardTitle>
+                    <CardTitle className="text-lg font-bold leading-tight">{task.description}</CardTitle>
                     <CardDescription className="line-clamp-2 text-xs pt-1">
-                        {task.description || "No description provided."}
+                        {task.estimated_hours ? `${task.estimated_hours}h estimated` : "No time estimate."}
                     </CardDescription>
                 </CardHeader>
 
@@ -124,7 +123,7 @@ export function TaskCard({ task, isAdmin, members }: TaskCardProps) {
                 </CardContent>
 
                 <CardFooter className="flex gap-2 pt-4 border-t bg-slate-50/30">
-                    {task.status !== 'done' && (
+                    {task.status !== 'done' && !isAdmin && (
                         <>
                             {task.status === 'pending' && (
                                 <Button onClick={handleStart} variant="outline" size="sm" className="flex-1 text-xs font-bold uppercase tracking-wider">

@@ -24,7 +24,9 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
             profiles (
                 full_name,
                 email,
-                avatar_url
+                avatar_url,
+                career_aspiration,
+                bandwidth_hours
             )
         `)
         .eq("org_id", orgId);
@@ -38,7 +40,7 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
     // Fetch task stats for everyone to calculate productivity
     const { data: tasks } = await supabase
         .from("tasks")
-        .select("assigned_to, status")
+        .select("assigned_to, status, estimated_hours")
         .eq("org_id", orgId);
 
     const getMemberStats = (userId: string) => {
@@ -46,7 +48,8 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
         const completed = userTasks.filter(t => t.status === 'done').length;
         const total = userTasks.length;
         const productivity = total > 0 ? Math.round((completed / total) * 100) : 0;
-        return { completed, total, productivity };
+        const totalHours = userTasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
+        return { completed, total, productivity, totalHours, active: total - completed };
     };
 
     return (
@@ -75,10 +78,8 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
                     const profile = unwrapRelation(member.profiles);
                     const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || '??';
                     
-                    // Mock data for wireframe "Wow" factor
-                    const status = stats.total > 2 ? 'Busy' : 'Available';
-                    const mbti = ['INTJ', 'ENFJ', 'INFP', 'ISTJ'][Math.floor(Math.random() * 4)];
-                    const hours = (35 + Math.random() * 10).toFixed(1);
+                    const status = stats.active > 2 ? 'Busy' : 'Available';
+                    const hours = `${stats.totalHours.toFixed(1)} / ${profile?.bandwidth_hours || 40}`;
 
                     return (
                         <Card key={member.user_id} className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden group">
@@ -122,9 +123,9 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                                                <BrainCircuit className="w-3 h-3" /> MBTI
+                                                <BrainCircuit className="w-3 h-3" /> Active
                                             </div>
-                                            <div className="text-lg font-bold">{mbti}</div>
+                                            <div className="text-lg font-bold">{stats.active}</div>
                                         </div>
                                     </div>
 
@@ -132,7 +133,7 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
                                         <div className="bg-slate-100 p-1.5 rounded-md">
                                             <UserPlus className="h-3 w-3" />
                                         </div>
-                                        Aspire to: {member.role === 'admin' ? 'Director of Operations' : 'Lead Developer'}
+                                        Aspire to: {profile?.career_aspiration || 'No specific role mentioned'}
                                     </div>
                                 </div>
                             </CardContent>

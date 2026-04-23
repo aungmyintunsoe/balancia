@@ -13,13 +13,28 @@ export async function updateTaskStatus(taskId: string, newStatus: string, orgId:
 
     if (!user) throw new Error("Unauthorized");
 
-    const { data: updatedRows, error } = await supabase
+    // Check if user is an admin of this org (admins can update any task, e.g. resolving friction board)
+    const { data: membership } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('org_id', orgId)
+        .eq('user_id', user.id)
+        .single();
+
+    const isAdmin = membership?.role === 'admin';
+
+    // Build the update query — admins can update any task in the org, employees only their own
+    let query = supabase
         .from('tasks')
         .update({ status: newStatus })
         .eq('id', taskId)
-        .eq('assigned_to', user.id) // Security: Ensure they own the task
-        .eq('org_id', orgId)
-        .select('id');
+        .eq('org_id', orgId);
+
+    if (!isAdmin) {
+        query = query.eq('assigned_to', user.id); // Security: employees can only update their own tasks
+    }
+
+    const { data: updatedRows, error } = await query.select('id');
 
     if (error) {
         console.error("Update error:", error);
@@ -29,9 +44,11 @@ export async function updateTaskStatus(taskId: string, newStatus: string, orgId:
         return { success: false, error: "Status update was blocked by permissions or task ownership." };
     }
 
-    // Refresh the specific dashboard page to show the new status
+    // Refresh all pages that show task status
     revalidatePath(`/org/${orgId}/dashboard`);
     revalidatePath(`/org/${orgId}/tasks`);
+    revalidatePath(`/org/${orgId}/goals`);
+    revalidatePath(`/org/${orgId}/analytics`);
     return { success: true };
 }
 
@@ -62,6 +79,8 @@ export async function reportFriction(taskId: string, complaintText: string, orgI
 
     revalidatePath(`/org/${orgId}/dashboard`);
     revalidatePath(`/org/${orgId}/tasks`);
+    revalidatePath(`/org/${orgId}/goals`);
+    revalidatePath(`/org/${orgId}/analytics`);
     return { success: true };
 }
 
@@ -246,7 +265,7 @@ export async function generatePivotStrategy(taskId: string, orgId: string) {
     }
 }
 
-export async function syncSkills(skills: { skill_name: string; proficiency_level: number }[]) {
+export async function syncSkills(skills: { skill_name: string; proficiency_level: number }[], orgId?: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -270,7 +289,26 @@ export async function syncSkills(skills: { skill_name: string; proficiency_level
         }
     }
 
-    revalidatePath(`/workspaces`); // Refresh everywhere skills are shown
-    revalidatePath(`/org`);
+    // Revalidate all pages where skills are displayed
+    revalidatePath(`/workspaces`);
+    if (orgId) {
+        revalidatePath(`/org/${orgId}/employees`);
+        revalidatePath(`/org/${orgId}/analytics`);
+        revalidatePath(`/org/${orgId}/dashboard`);
+        revalidatePath(`/org/${orgId}/profile`);
+        revalidatePath(`/org/${orgId}/goals`);
+    } else {
+        // Fallback: revalidate all org pages by fetching user's memberships
+        const { data: memberships } = await supabase
+            .from('organization_members')
+            .select('org_id')
+            .eq('user_id', user.id);
+        for (const m of memberships || []) {
+            revalidatePath(`/org/${m.org_id}/employees`);
+            revalidatePath(`/org/${m.org_id}/analytics`);
+            revalidatePath(`/org/${m.org_id}/dashboard`);
+            revalidatePath(`/org/${m.org_id}/profile`);
+        }
+    }
     return { success: true };
 }

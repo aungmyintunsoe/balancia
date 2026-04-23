@@ -10,7 +10,6 @@ type TeamMember = {
     user_id: string;
     role: 'admin' | 'employee';
     profiles?: { full_name?: string | null; email?: string | null } | { full_name?: string | null; email?: string | null }[] | null;
-    employee_skills?: { skill_name: string; proficiency_level: number }[] | null;
 };
 
 export async function generateProject(formData: FormData) {
@@ -24,7 +23,8 @@ export async function generateProject(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
 
     try {
-        const { data, error: teamError } = await supabase
+        // Fetch all org members — using service-level select via RLS-safe approach
+        const { data: membersData, error: teamError } = await supabase
             .from('organization_members')
             .select(`
                 user_id,
@@ -32,26 +32,34 @@ export async function generateProject(formData: FormData) {
                 profiles (
                     full_name,
                     email
-                ),
-                employee_skills (
-                    skill_name,
-                    proficiency_level
                 )
             `)
             .eq('org_id', orgId);
 
-        if (!teamError && data && data.length > 0) {
-            teamData = (data ?? []) as TeamMember[];
-            const employeesOnly = teamData.filter(m => m.role === 'employee');
-            console.log(`DEBUG: Found ${employeesOnly.length} employees out of ${teamData.length} total members.`);
+        if (!teamError && membersData && membersData.length > 0) {
+            teamData = (membersData ?? []) as TeamMember[];
+            console.log(`DEBUG: Found ${teamData.length} members. Roles: ${teamData.map(m => m.role).join(', ')}`);
         } else {
-            // Fallback: If no team, use the current user as the only resource
-            teamData = user?.id ? [{ user_id: user.id, role: 'admin', employee_skills: [] }] : [];
+            teamData = user?.id ? [{ user_id: user.id, role: 'admin' }] : [];
             console.log("DEBUG: No team found, falling back to current user.");
         }
     } catch (e) {
         console.error("DEBUG: Team Fetch Error:", e);
-        teamData = user?.id ? [{ user_id: user.id, role: 'admin', employee_skills: [] }] : [];
+        teamData = user?.id ? [{ user_id: user.id, role: 'admin' }] : [];
+    }
+
+    // Fetch skills for all team members in one query
+    const memberIds = teamData.map(m => m.user_id);
+    const { data: allSkills } = await supabase
+        .from('employee_skills')
+        .select('user_id, skill_name, proficiency_level')
+        .in('user_id', memberIds);
+
+    // Build a lookup map: user_id -> skills[]
+    const skillsByUser: Record<string, { skill_name: string; proficiency_level: number }[]> = {};
+    for (const skill of allSkills ?? []) {
+        if (!skillsByUser[skill.user_id]) skillsByUser[skill.user_id] = [];
+        skillsByUser[skill.user_id].push({ skill_name: skill.skill_name, proficiency_level: skill.proficiency_level });
     }
 
     const aiRoster = teamData.map((member) => {
@@ -63,7 +71,7 @@ export async function generateProject(formData: FormData) {
             display_name: displayName,
             role: member.role,
             role_priority: member.role === 'employee' ? 'primary_executor' : 'manager_fallback',
-            skills: member.employee_skills ?? [],
+            skills: skillsByUser[member.user_id] ?? [],
         };
     });
     const preferredAssigneeIds = aiRoster
@@ -104,8 +112,8 @@ export async function generateProject(formData: FormData) {
             3. Prioritize 'proficiency_level' (1-5) when multiple users have the same skill.
             4. Balance the workload—do not assign all tasks to one person if others are available.
             5. If no one has the exact skill, assign to the most versatile member.
-            6. Prefer assignees in "preferred_assignee_ids". Only use non-preferred assignees if preferred list is empty.
-            7. Use the person's display_name + skills for reasoning, never "first item" behavior.
+            6. CRITICAL: You MUST prioritize assigning tasks to users listed in "preferred_assignee_ids" (these are the employees). NEVER assign to an admin unless absolutely no employee is available.
+            7. Use the person's display_name + skills for reasoning. If no skills are present, distribute the tasks evenly among the "preferred_assignee_ids".
 
             CRITICAL: Return ONLY a raw JSON object. Do not include markdown code blocks, preambles, or any other text.
             The JSON MUST match this schema exactly:
@@ -220,6 +228,8 @@ export async function generateProject(formData: FormData) {
 
     revalidatePath(`/org/${orgId}/goals`)
     revalidatePath(`/org/${orgId}/dashboard`)
+    revalidatePath(`/org/${orgId}/tasks`)
+    revalidatePath(`/org/${orgId}/analytics`)
 }
 
 export async function deleteProject(projectId: string, orgId: string) {

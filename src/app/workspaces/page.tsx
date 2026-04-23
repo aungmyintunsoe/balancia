@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/server"
-import { LayoutGrid, PlusCircle, UserPlus, LogOut, CheckCircle2, Leaf } from "lucide-react"
+import { LayoutGrid, PlusCircle, UserPlus, LogOut, CheckCircle2, Leaf, Users } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { CopyButton } from "@/components/ui/dashboard/CopyButton"
@@ -25,7 +25,8 @@ export default async function WorkspacesPage() {
         organizations (
             id,
             name,
-            join_code
+            join_code,
+            organization_members(count)
         )
     `)
         .eq('user_id', user.id)
@@ -74,9 +75,15 @@ export default async function WorkspacesPage() {
                                             </div>
                                         </CardHeader>
                                         <CardContent>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                                <CheckCircle2 className="h-3 w-3 text-green-500" /> Member since today
-                                            </p>
+                                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                                <p className="flex items-center gap-1.5">
+                                                    <CheckCircle2 className="h-3 w-3 text-green-500" /> Active
+                                                </p>
+                                                <p className="flex items-center gap-1.5">
+                                                    <Users className="h-3 w-3" /> 
+                                                    {org.organization_members?.[0]?.count || 1} Member{org.organization_members?.[0]?.count !== 1 ? 's' : ''}
+                                                </p>
+                                            </div>
                                         </CardContent>
                                         <CardFooter className="pt-0 flex items-center justify-between">
                                             <span className="text-xs font-mono text-slate-400">Code: {org.join_code}</span>

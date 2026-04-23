@@ -8,14 +8,18 @@ import { updateTaskStatus } from "@/app/actions/taskActions";
 import { FrictionModal } from "./FrictionModal";
 import { SkillManager } from "./SkillManager";
 import { useState } from "react";
+import { markNudgeRead } from "@/app/actions/auditActions";
 
 interface EmployeeWorkstationProps {
     tasks: any[];
     orgId: string;
     initialSkills: any[];
+    profile?: any;
+    rank?: number;
+    nudges?: any[];
 }
 
-export function EmployeeWorkstation({ tasks, orgId, initialSkills }: EmployeeWorkstationProps) {
+export function EmployeeWorkstation({ tasks, orgId, initialSkills, profile, rank, nudges = [] }: EmployeeWorkstationProps) {
     const [localTasks, setLocalTasks] = useState(tasks);
     const [actionError, setActionError] = useState<string | null>(null);
 
@@ -37,6 +41,11 @@ export function EmployeeWorkstation({ tasks, orgId, initialSkills }: EmployeeWor
     const doneTasks = localTasks.filter(t => t.status === 'done');
     const blockedTasks = localTasks.filter(t => t.status === 'blocked');
 
+    const totalHours = localTasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
+    const completedHours = doneTasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
+    const activeHours = inProgressTasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
+    const bandwidth = profile?.bandwidth_hours || 40;
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {actionError && (
@@ -44,33 +53,62 @@ export function EmployeeWorkstation({ tasks, orgId, initialSkills }: EmployeeWor
                     {actionError}
                 </div>
             )}
+
+            {nudges.map((nudge) => (
+                <div key={nudge.id} className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800 shadow-sm animate-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-4 w-4 text-blue-500" />
+                        <span className="font-medium">{nudge.message}</span>
+                    </div>
+                    <form action={markNudgeRead.bind(null, nudge.id, orgId)}>
+                        <Button type="submit" size="sm" variant="outline" className="h-7 text-xs border-blue-200 hover:bg-blue-100 text-blue-700 font-bold">
+                            Dismiss
+                        </Button>
+                    </form>
+                </div>
+            ))}
+            
+            <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-2xl shadow-sm">
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800">Welcome back, {profile?.full_name?.split(' ')[0] || 'Team Member'}</h2>
+                    <p className="text-xs text-slate-500 font-medium">Internal Ranking: <span className="font-bold text-[#22c55e]">#{rank}</span></p>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm font-bold text-slate-800">{activeHours}h / {bandwidth}h</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">Current Weekly Load</p>
+                    <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1 inline-block">
+                        <div className={`h-full rounded-full ${activeHours > bandwidth ? 'bg-red-500' : 'bg-[#22c55e]'}`} style={{ width: `${Math.min((activeHours / bandwidth) * 100, 100)}%` }} />
+                    </div>
+                </div>
+            </div>
+
             {/* Header / Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="border-none bg-emerald-50/50 shadow-sm">
                     <CardContent className="p-4 flex items-center gap-4">
                         <div className="bg-emerald-500 p-2 rounded-xl text-white">
-                            <Target className="h-5 w-5" />
+                            <CheckCircle2 className="h-5 w-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-slate-800">{localTasks.length}</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total My Tasks</p>
+                            <p className="text-2xl font-black text-slate-800">{doneTasks.length}</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Completed This Month</p>
                         </div>
                     </CardContent>
                 </Card>
                 <Card className="border-none bg-blue-50/50 shadow-sm">
                     <CardContent className="p-4 flex items-center gap-4">
                         <div className="bg-blue-500 p-2 rounded-xl text-white">
-                            <Flame className="h-5 w-5" />
+                            <Clock className="h-5 w-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-slate-800">{inProgressTasks.length}</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Currently Pushing</p>
+                            <p className="text-2xl font-black text-slate-800">{completedHours}h</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hours Logged</p>
                         </div>
                     </CardContent>
                 </Card>
                 <Card className="border-none bg-white shadow-sm border border-slate-100 overflow-hidden relative">
                     <CardContent className="p-4">
-                        <SkillManager initialSkills={initialSkills} />
+                        <SkillManager initialSkills={initialSkills} orgId={orgId} />
                     </CardContent>
                 </Card>
             </div>

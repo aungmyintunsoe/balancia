@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, TrendingUp, Users, ArrowRight, Clock, CheckCircle2, Shield } from "lucide-react";
+import { AlertTriangle, TrendingUp, Users, ArrowRight, Clock, CheckCircle2, Shield, Search } from "lucide-react";
 import { unwrapRelation } from "@/lib/supabase/relations";
+import { runSkillAudit } from "@/app/actions/auditActions";
 
 export default async function AnalyticsPage(props: { params: Promise<{ orgId: string }> }) {
     const { orgId } = await props.params;
@@ -44,9 +45,19 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
 
     return (
         <div className="p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500">
-            <header className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Analytics</h1>
-                <p className="text-slate-500 text-sm">Workload balance and overwork prevention</p>
+            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Analytics</h1>
+                    <p className="text-slate-500 text-sm">Workload balance and overwork prevention</p>
+                </div>
+                <form action={async () => {
+                    'use server';
+                    await runSkillAudit(orgId);
+                }}>
+                    <Button type="submit" className="bg-[#22c55e] hover:bg-[#16a34a] shadow-lg shadow-emerald-100 font-bold">
+                        <Search className="h-4 w-4 mr-2" /> Run AI Skill Audit
+                    </Button>
+                </form>
             </header>
 
             {/* Top KPIs */}
