@@ -39,16 +39,15 @@ export default async function OrgLayout({
     const joinCode = organization?.join_code ?? "";
 
     return (
-        <div className="min-h-screen flex bg-[#f8f8f8]">
+        <div className="min-h-screen flex bg-[#f8f8f8] font-sans">
             <aside className="w-64 shrink-0 bg-white border-r border-slate-200 flex flex-col">
                 <Link
                     href={`/org/${orgId}/dashboard`}
                     className="h-20 px-5 border-b border-slate-200 flex items-center gap-3"
                 >
-                    <div className="h-10 w-10 rounded-md bg-[#43e400] text-slate-900 flex items-center justify-center font-black">
-                        B
-                    </div>
-                    <span className="text-3xl font-black text-slate-900 leading-none">Balancia</span>
+                    {/* --- FIXED IMAGE SOURCE HERE --- */}
+                    <img src="/logo.png" alt="Balancia Logo" className="w-12 h-8 object-contain mix-blend-multiply" />
+                    <span className="text-2xl font-bold font-sans text-slate-900 tracking-tight leading-none">Balancia</span>
                 </Link>
 
                 <div className="p-4 flex-1">
@@ -59,7 +58,7 @@ export default async function OrgLayout({
                     <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                         {orgName}
                     </div>
-                    <Badge variant="outline" className="font-mono tracking-widest text-xs border-[#22c55e] text-[#22c55e]">
+                    <Badge variant="outline" className="font-mono tracking-widest text-xs border-[#8ef04d] text-[#6bc135]">
                         {joinCode}
                     </Badge>
                     <form action={signOut}>

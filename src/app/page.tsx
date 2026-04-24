@@ -6,6 +6,7 @@ export default function LandingPage() {
     return (
         <div className="min-h-screen bg-[#f8faf9] selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
             {/* Header / Nav */}
+            {/* Header / Nav */}
             <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-emerald-50">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
@@ -14,12 +15,10 @@ export default function LandingPage() {
                         </div>
                         <span className="text-xl font-black tracking-tight text-slate-800">Balancia</span>
                     </div>
+                    
+                    {/* The menu links were deleted from here! */}
+                    
                     <div className="flex items-center gap-8">
-                        <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-500">
-                            <a href="#" className="hover:text-emerald-600 transition-colors">Platform</a>
-                            <a href="#" className="hover:text-emerald-600 transition-colors">Enterprise</a>
-                            <a href="#" className="hover:text-emerald-600 transition-colors">Vision</a>
-                        </div>
                         <Link href="/auth">
                             <Button className="rounded-full px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-200">
                                 Launch Platform
@@ -57,9 +56,6 @@ export default function LandingPage() {
                                 Start Building <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </Button>
                         </Link>
-                        <Button size="lg" variant="ghost" className="h-16 px-10 rounded-2xl text-slate-600 text-lg font-bold hover:bg-slate-50 transition-all border border-slate-100">
-                            Watch Vision
-                        </Button>
                     </div>
 
                     {/* Feature Highlights */}
