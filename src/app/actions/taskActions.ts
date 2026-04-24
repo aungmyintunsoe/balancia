@@ -1,4 +1,3 @@
-// src/app/actions/taskActions.ts
 'use server'
 
 import { createClient } from "@/lib/supabase/server";
@@ -313,12 +312,22 @@ export async function syncSkills(skills: { skill_name: string; proficiency_level
     return { success: true };
 }
 
-// ==========================================
-// NEW FUNCTION ADDED BELOW:
-// ==========================================
-
 export async function redistributeTasks(orgId: string, overworkedUserId: string) {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    // NEW: Verify caller is an admin
+    const { data: membership } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('org_id', orgId)
+        .eq('user_id', user.id)
+        .single();
+
+    if (membership?.role !== 'admin') {
+        throw new Error("Only managers can redistribute tasks");
+    }
 
     console.log(`Starting task redistribution for user: ${overworkedUserId}`);
 
@@ -339,7 +348,6 @@ export async function redistributeTasks(orgId: string, overworkedUserId: string)
         return { success: false, error: error.message };
     }
 
-    // Step 3: Tell Next.js to refresh the relevant pages so the UI updates instantly!
     revalidatePath(`/org/${orgId}/dashboard`);
     revalidatePath(`/org/${orgId}/tasks`);
     revalidatePath(`/org/${orgId}/analytics`);

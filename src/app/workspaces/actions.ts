@@ -73,3 +73,12 @@ export async function signOut() {
     await supabase.auth.signOut()
     redirect("/auth")
 }
+
+export async function deleteWorkspace(orgId: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.from('projects').delete().eq('org_id', orgId); // Example cascade
+    const { error: orgError } = await supabase.from('organizations').delete().eq('id', orgId);
+    
+    if (orgError) throw new Error(orgError.message);
+    revalidatePath('/workspaces');
+}
