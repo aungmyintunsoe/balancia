@@ -9,6 +9,7 @@ import { FrictionModal } from "./FrictionModal";
 import { SkillManager } from "./SkillManager";
 import { useState } from "react";
 import { markNudgeRead } from "@/app/actions/auditActions";
+import { useOptiChrome } from "@/components/OptiChromeContext";
 
 interface EmployeeWorkstationProps {
     tasks: any[];
@@ -22,6 +23,7 @@ interface EmployeeWorkstationProps {
 export function EmployeeWorkstation({ tasks, orgId, initialSkills, profile, rank, nudges = [] }: EmployeeWorkstationProps) {
     const [localTasks, setLocalTasks] = useState(tasks);
     const [actionError, setActionError] = useState<string | null>(null);
+    const { triggerTaskCompleteSpin } = useOptiChrome();
 
     async function handleStatusUpdate(taskId: string, newStatus: string) {
         const previousTasks = localTasks;
@@ -34,6 +36,9 @@ export function EmployeeWorkstation({ tasks, orgId, initialSkills, profile, rank
             return;
         }
         setActionError(null);
+        if (newStatus === "done") {
+            triggerTaskCompleteSpin();
+        }
     }
 
     const todoTasks = localTasks.filter(t => t.status === 'pending');

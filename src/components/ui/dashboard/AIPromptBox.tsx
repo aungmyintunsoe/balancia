@@ -6,7 +6,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2 } from "lucide-react";
 import { generateProject } from "../../../app/actions";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useOptiChrome } from "@/components/OptiChromeContext";
+
+function AiGeneratingBridge() {
+    const { pending } = useFormStatus();
+    const { setGeneratingSlot, triggerGoalNod } = useOptiChrome();
+    const wasPending = useRef(false);
+
+    useEffect(() => {
+        setGeneratingSlot("goals-form", pending);
+        return () => setGeneratingSlot("goals-form", false);
+    }, [pending, setGeneratingSlot]);
+
+    useEffect(() => {
+        if (wasPending.current && !pending) {
+            triggerGoalNod();
+        }
+        wasPending.current = pending;
+    }, [pending, triggerGoalNod]);
+
+    return null;
+}
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -52,6 +73,7 @@ export default function AIPromptBox({ orgId }: { orgId: string }) {
     return (
         <form action={generateProject} className="space-y-4">
             <input type="hidden" name="orgId" value={orgId} />
+            <AiGeneratingBridge />
 
             <div className="space-y-2">
                 <Textarea

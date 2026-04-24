@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -15,6 +15,7 @@ import { Sparkles, Loader2, UserPlus, Info, CheckCircle2, AlertTriangle } from "
 import { generatePivotStrategy, assignTask } from "../../../app/actions/taskActions";
 import { Badge } from "@/components/ui/badge";
 import CopyErrorButton from "./CopyErrorButton";
+import { useOptiChrome } from "@/components/OptiChromeContext";
 
 interface PivotRecommendation {
     recommended_user_id: string;
@@ -28,6 +29,16 @@ export function AIPivotDialog({ taskId, orgId, taskTitle }: { taskId: string, or
     const [recommendation, setRecommendation] = useState<PivotRecommendation | null>(null);
     const [error, setError] = useState<{ message: string, stack?: string } | null>(null);
     const [open, setOpen] = useState(false);
+    const { setGeneratingSlot } = useOptiChrome();
+
+    useEffect(() => {
+        if (!open) {
+            setGeneratingSlot("pivot", false);
+            return;
+        }
+        setGeneratingSlot("pivot", loading || applying);
+        return () => setGeneratingSlot("pivot", false);
+    }, [open, loading, applying, setGeneratingSlot]);
 
     async function handleGetStrategy() {
         setLoading(true);

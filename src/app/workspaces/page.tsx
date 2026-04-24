@@ -34,7 +34,6 @@ export default async function WorkspacesPage() {
         <div className="min-h-screen bg-[#fcfcfc] dark:bg-slate-950">
             <nav className="border-b bg-white px-6 py-3 flex justify-between items-center sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-3">
-                    {/* Updated Logo */}
                     <img src="/logo.png" alt="Balancia Logo" className="h-8 w-auto object-contain" />
                     <span className="text-xl font-black tracking-tight text-slate-800">Balancia</span>
                 </div>

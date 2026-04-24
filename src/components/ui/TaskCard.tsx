@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from "react";
+import { useOptiChrome } from "@/components/OptiChromeContext";
 import { updateTaskStatus, reportFriction } from "@/app/actions/taskActions";
 import { useParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -36,6 +37,7 @@ interface TaskCardProps {
 export function TaskCard({ task, isAdmin, members }: TaskCardProps) {
     const [isPending, startTransition] = useTransition();
     const [isSOSOpen, setIsSOSOpen] = useState(false);
+    const { triggerTaskCompleteSpin } = useOptiChrome();
     const [blockerReason, setBlockerReason] = useState("");
     const params = useParams();
     const orgId = params.orgId as string;
@@ -48,16 +50,21 @@ export function TaskCard({ task, isAdmin, members }: TaskCardProps) {
 
     const handleComplete = () => {
         startTransition(async () => {
-            await updateTaskStatus(task.id, 'done', orgId);
+            const result = await updateTaskStatus(task.id, 'done', orgId);
+            if (result.success) {
+                triggerTaskCompleteSpin();
+            }
         });
     };
 
     const submitSOS = () => {
         if (!blockerReason.trim()) return;
         startTransition(async () => {
-            await reportFriction(task.id, blockerReason, orgId);
-            setIsSOSOpen(false);
-            setBlockerReason("");
+            const result = await reportFriction(task.id, blockerReason, orgId);
+            if (result.success) {
+                setIsSOSOpen(false);
+                setBlockerReason("");
+            }
         });
     };
 

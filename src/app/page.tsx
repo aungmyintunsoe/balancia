@@ -68,12 +68,8 @@ export default function LandingPage() {
 
             {/* Footer */}
             <footer className="border-t border-slate-100 py-12 bg-white">
-                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-3 opacity-50">
-                        <img src="/logo.png" alt="Balancia Logo" className="h-6 w-auto object-contain grayscale brightness-0" />
-                        <span className="text-sm font-bold tracking-widest text-slate-900 uppercase">Balancia</span>
-                    </div>
-                    <p className="text-slate-400 text-xs font-medium">© 2026 Balancia Orchestrator · Empowered by Ilmu.ai</p>
+                <div className="max-w-7xl mx-auto px-6 flex justify-end items-center">
+                    <p className="text-slate-400 text-xs font-medium text-right">@2026 Five gals</p>
                 </div>
             </footer>
         </div>

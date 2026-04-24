@@ -5,6 +5,7 @@ import { Target, Clock, Users, Zap, CheckCircle2, ChevronRight, AlertTriangle, T
 import Link from "next/link";
 import CopyErrorButton from "@/components/ui/dashboard/CopyErrorButton";
 import DeleteGoalButton from "@/components/ui/dashboard/DeleteGoalButton";
+import { GeneratingGoalsOverlay } from "@/components/GeneratingGoalsOverlay";
 
 export default async function GoalsPage(props: { 
     params: Promise<{ orgId: string }>; 
@@ -88,6 +89,10 @@ export default async function GoalsPage(props: {
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest pb-2">Click a goal to view its tasks</p>
                 </div>
 
+                <div className="relative min-h-[320px]">
+                    <GeneratingGoalsOverlay enabled={isAdmin} />
+
+                    <div className="space-y-6">
                 {projects && projects.length > 0 ? projects.map((project: any, i: number) => {
                     const allTasks = project.structured_goals?.flatMap((g: any) => g.tasks) ?? [];
                     const completedCount = allTasks.filter((t: any) => t.status === 'done').length;
@@ -177,6 +182,8 @@ export default async function GoalsPage(props: {
                         <p className="text-slate-500 text-base mt-1">Use the orchestrator above to generate your first goal.</p>
                     </div>
                 )}
+                    </div>
+                </div>
             </section>
         </div>
     );

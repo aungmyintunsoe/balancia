@@ -27,7 +27,7 @@ function AuthContent() {
                 
                 {/* --- LOGO SECTION UPDATED --- */}
                 <div className="mb-16 flex items-center gap-3">
-                    <img src="logo.png" alt="Balancia Logo" className="w-16 h-10 object-contain mix-blend-multiply" />
+                    <img src="/logo.png" alt="Balancia Logo" className="w-16 h-10 object-contain mix-blend-multiply" />
                     <span className="text-4xl font-bold font-sans text-slate-900 tracking-tight">Balancia</span>
                 </div>
                 {/* ---------------------------- */}
