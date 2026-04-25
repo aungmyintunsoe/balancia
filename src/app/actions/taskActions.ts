@@ -322,7 +322,6 @@ export async function redistributeTasks(orgId: string, overworkedUserId: string)
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // NEW: Verify caller is an admin
     const { data: membership } = await supabase
         .from('organization_members')
         .select('role')
@@ -336,21 +335,24 @@ export async function redistributeTasks(orgId: string, overworkedUserId: string)
 
     console.log(`Starting task redistribution for user: ${overworkedUserId}`);
 
-    // Step 1: Find tasks that are assigned to this person and are currently active
-    // Step 2: Unassign them (set assigned_to to null) and set status back to 'todo'
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
         .from('tasks')
         .update({ 
             assigned_to: null, 
-            status: 'todo' 
+            status: 'pending' 
         })
         .eq('assigned_to', overworkedUserId)
         .eq('org_id', orgId)
-        .in('status', ['in_progress', 'blocked']);
+        .neq('status', 'done') 
+        .select('id');        
 
     if (error) {
         console.error("Failed to redistribute tasks:", error);
         return { success: false, error: error.message };
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+        console.warn("Redistribute ran, but 0 tasks were updated. Check if tasks exist or if RLS blocked it.");
+
     }
 
     revalidatePath(`/org/${orgId}/dashboard`);
