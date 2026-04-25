@@ -114,11 +114,11 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
     }
 
     return (
-        <div className="w-full min-h-screen bg-[#fafbfc] font-sans p-6 lg:p-10 animate-in fade-in duration-500">
+        <div className="w-full min-h-screen bg-[#fafbfc] font-sans p-4 sm:p-6 lg:p-10 animate-in fade-in duration-500">
             
             <header className="mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                 <div>
-                    <h1 className="text-[32px] font-bold text-slate-900 tracking-tight mb-1">Dashboard</h1>
+                    <h1 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-1">Dashboard</h1>
                     <p className="text-slate-500 text-sm font-medium">Overview of team productivity and goals</p>
                 </div>
                 {isAdmin && (
@@ -136,7 +136,7 @@ export default async function OrgDashboardPage(props: { params: Promise<{ orgId:
             {isAdmin ? (
                 <>
                     {/* KPI Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
                         {[
                             { title: "Active Goals", value: activeGoalsCount ?? 0, sub: "+2 this month", icon: Target, color: "text-[#8CE065]", bg: "bg-[#8CE065]/10" },
                             { title: "Team Members", value: membersCount ?? 0, sub: "3 new line", icon: Users, color: "text-[#8CE065]", bg: "bg-[#8CE065]/10" },

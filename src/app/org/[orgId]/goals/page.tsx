@@ -39,10 +39,10 @@ export default async function GoalsPage(props: {
         .from('organization_members').select('user_id').eq('org_id', orgId);
 
     return (
-        <div className="p-8 md:p-12 max-w-5xl mx-auto animate-in fade-in duration-500">
+        <div className="p-4 sm:p-8 md:p-12 max-w-5xl mx-auto animate-in fade-in duration-500">
             {/* Page Header */}
             <div className="mb-10">
-                <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Set Your Goals</h1>
+                <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 mb-2 tracking-tight">Set Your Goals</h1>
                 <p className="text-slate-500 text-lg font-medium">Type in your ideas and we'll help break them into actionable tasks</p>
             </div>
 
@@ -153,7 +153,7 @@ export default async function GoalsPage(props: {
                                     </div>
 
                                     {/* Stats strip */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-2">
+                                    <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4 pt-2">
                                         {[
                                             { icon: CheckCircle2, label: "Tasks", value: `${completedCount}/${totalCount}` },
                                             { icon: Users, label: "Team", value: `${teamCount} members` },

@@ -53,7 +53,7 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
     };
 
     return (
-        <div className="p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500">
+        <div className="p-4 sm:p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500">
             
             <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -127,7 +127,7 @@ export default async function EmployeesPage(props: { params: Promise<{ orgId: st
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-4 pb-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pb-5">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase">
                                             <Clock className="w-3.5 h-3.5" /> Hours/Week

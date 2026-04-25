@@ -22,11 +22,11 @@ function AuthContent() {
     const error = searchParams.get('error')
 
     return (
-        <div className="min-h-screen bg-[#f4f4f4] px-6 py-8 md:px-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div className="min-h-screen bg-[#f4f4f4] px-4 sm:px-6 py-6 sm:py-8 md:px-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
             <div className="mx-auto w-full max-w-5xl">
                 
                 {/* --- LOGO SECTION UPDATED --- */}
-                <div className="mb-16 flex items-center gap-3">
+                <div className="mb-10 sm:mb-16 flex items-center gap-3">
                     <img src="/logo.png" alt="Balancia Logo" className="w-16 h-10 object-contain mix-blend-multiply" />
                     <span className="text-4xl font-bold font-sans text-slate-900 tracking-tight">Balancia</span>
                 </div>
@@ -38,12 +38,12 @@ function AuthContent() {
                     </p>
                     
                     {/* --- HEADER COLOR UPDATED --- */}
-                    <h1 className="text-6xl font-bold font-sans text-[#8ef04d] leading-none tracking-tight">
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold font-sans text-[#8ef04d] leading-none tracking-tight">
                         {mode === 'login' ? 'WELCOME BACK' : 'BUILD A BALANCED TEAM'}
                     </h1>
                     {/* ---------------------------- */}
                     
-                    <p className="text-2xl mt-4 text-slate-400 font-bold font-sans">
+                    <p className="text-lg sm:text-2xl mt-4 text-slate-400 font-bold font-sans">
                         {mode === 'login'
                             ? 'Sign in as a manager or as an employee invited by your manager.'
                             : 'Manager accounts can invite teammates with one click.'}

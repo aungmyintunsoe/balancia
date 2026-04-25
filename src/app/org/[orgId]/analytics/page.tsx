@@ -67,10 +67,10 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
     )`;
 
     return (
-        <div className="p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500 bg-[#fafbfc] min-h-screen">
+        <div className="p-4 sm:p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500 bg-[#fafbfc] min-h-screen">
             
             <header className="mb-8">
-                <h1 className="text-[32px] font-bold tracking-tight text-slate-900 leading-tight">Analytics & Insights</h1>
+                <h1 className="text-2xl sm:text-[32px] font-bold tracking-tight text-slate-900 leading-tight">Analytics & Insights</h1>
                 <p className="text-slate-500 text-[15px] mt-1">Deep dive into team performance and productivity</p>
             </header>
 

@@ -43,14 +43,14 @@ export default async function TasksPage(props: { params: Promise<{ orgId: string
     }
 
     return (
-        <div className="p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500 bg-[#fafbfc] min-h-screen">
+        <div className="p-4 sm:p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500 bg-[#fafbfc] min-h-screen">
             <header className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Tasks</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Tasks</h1>
                 <p className="text-slate-500 text-sm mt-1">Track and manage all team tasks</p>
             </header>
             
             {/* Filter Bar styled like Pic 1 */}
-            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-50 flex items-center gap-6 mb-6 max-w-2xl">
+            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-50 flex items-center gap-4 sm:gap-6 mb-6 max-w-2xl overflow-x-auto">
                 <div className="flex items-center gap-2 pl-2 border-r border-slate-100 pr-4">
                     <Filter className="w-4 h-4 text-slate-400" />
                 </div>

@@ -138,6 +138,36 @@
   55% { transform: rotate(720deg); animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
   100% { transform: rotate(1440deg); }
 }
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes textShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
 .animate-opti-catch {
-  animation: opti-catch 2.5s infinite;
+  animation: opti-catch 1.5s infinite;
+}
+
+.animate-breathe {
+  animation: breathe 8s ease-in-out infinite;
+}
+
+.animate-text-shift {
+  animation: textShift 5s ease infinite;
+}
+
+@keyframes drift {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(30px, -50px); }
+  66% { transform: translate(-20px, 20px); }
+  100% { transform: translate(0, 0); }
+}
+
+.animate-drift {
+  animation: drift 20s ease-in-out infinite;
 }

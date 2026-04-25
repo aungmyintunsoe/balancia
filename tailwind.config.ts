@@ -24,12 +24,22 @@ const config = {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" },
         },
+        breathe: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.03)" },
+        },
+        textShift: {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
       },
       animation: {
         "opti-float": "opti-float 2.1s ease-in-out infinite",
         "opti-nod": "opti-nod 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         "opti-spin-snap": "opti-spin-snap 0.34s cubic-bezier(0.2, 0.9, 0.15, 1) both",
         "goal-shimmer": "goal-shimmer 1.8s ease-in-out infinite",
+        breathe: "breathe 8s ease-in-out infinite",
+        "text-shift": "textShift 5s ease infinite",
       },
     },
   },
