@@ -32,7 +32,7 @@ export async function createWorkspace(formData: FormData) {
     if (memberError) throw memberError
 
     revalidatePath('/workspaces')
-    redirect(`/org/${orgId}/dashboard`)
+    redirect(`/org/${orgId}`)
 }
 
 export async function joinWorkspace(formData: FormData) {
@@ -61,11 +61,11 @@ export async function joinWorkspace(formData: FormData) {
         })
 
     if (memberError) {
-        return redirect(`/org/${org.id}/dashboard`)
+        return redirect(`/org/${org.id}`)
     }
 
     revalidatePath('/workspaces')
-    redirect(`/org/${org.id}/dashboard`)
+    redirect(`/org/${org.id}`)
 }
 
 export async function signOut() {
