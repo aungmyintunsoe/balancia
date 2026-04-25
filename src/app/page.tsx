@@ -103,7 +103,7 @@ export default function LandingPage() {
             {/* Footer */}
             <footer className="border-t border-slate-100 py-8 sm:py-12 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-end items-center">
-                    <p className="text-slate-400 text-xs font-medium text-right">@2026 Five gals</p>
+                    <p className="text-slate-400 text-xs font-medium text-right">Copyright &copy; 2026 Five gals</p>
                 </div>
             </footer>
         </div>
