@@ -66,6 +66,12 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
         #64748b ${pDone + pInProg + pReview}% 100%
     )`;
 
+    // WRAPPER FUNCTION: Calls the action and returns void to satisfy TypeScript
+    const handleRedistribute = async (targetOrgId: string, targetUserId: string) => {
+        "use server";
+        await redistributeTasks(targetOrgId, targetUserId);
+    };
+
     return (
         <div className="p-4 sm:p-6 md:p-8 max-w-screen-xl mx-auto animate-in fade-in duration-500 bg-[#fafbfc] min-h-screen">
             
@@ -95,7 +101,6 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                             <p className="text-[13px] font-bold text-slate-500 tracking-wide">Team Capacity</p>
                             <Users className="h-5 w-5 text-[#8CE065]" />
                         </div>
-                        {/* Using 92% as static visual or could map to an actual capacity metric */}
                         <p className="text-[40px] font-black text-slate-900 leading-none mb-2">92%</p>
                         <p className="text-[13px] font-medium text-slate-500">Well balanced workload</p>
                     </CardContent>
@@ -172,10 +177,10 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                                 className="w-48 h-48 rounded-full shadow-inner relative"
                                 style={{ background: conicGradientString }}
                             >
-                                {/* Center cutout for donut style (optional, removed to match Pic 1 exact pie look) */}
+                                {/* Center cutout for donut style */}
                             </div>
                             
-                            {/* Floating Labels (Approximate based on image style) */}
+                            {/* Floating Labels */}
                             {doneTasks > 0 && <span className="absolute bottom-6 right-8 text-[9px] font-bold text-slate-600">Completed<br/>{doneTasks}</span>}
                             {inProgTasks > 0 && <span className="absolute bottom-16 left-6 text-[9px] font-bold text-slate-600 text-right">In Progress<br/>{inProgTasks}</span>}
                         </div>
@@ -203,7 +208,7 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                             </thead>
                             <tbody>
                                 {memberStats.map((m, i) => {
-                                    // Status Badge Logic matching Pic 1
+                                    // Status Badge Logic
                                     let statusText = "Healthy";
                                     let badgeClass = "bg-[#dcfce7] text-[#16a34a]";
                                     
@@ -220,8 +225,8 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                                             <td className="px-8 py-4 flex items-center gap-3">
                                                 <Award className="h-4 w-4 text-slate-300" />
                                                 <span className="font-bold text-[14px] text-slate-900">
-  {m.name.split(' ').map((n: string, i: number) => i === 0 ? n : n[0] + '.').join(' ')}
-</span>
+                                                    {m.name.split(' ').map((n: string, i: number) => i === 0 ? n : n[0] + '.').join(' ')}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -251,7 +256,7 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                 </CardContent>
             </Card>
 
-            {/* Overwork Prevention Alerts (Only shows if there are at-risk members) */}
+            {/* Overwork Prevention Alerts */}
             <div className="bg-[#fcf1ec] rounded-[24px] p-8">
                 <div className="flex items-center gap-3 mb-6">
                     <AlertTriangle className="h-6 w-6 text-red-500" strokeWidth={2.5} />
@@ -260,25 +265,28 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
 
                 <div className="space-y-4">
                     {memberStats.filter(m => m.isOverwork).length > 0 ? (
-                        memberStats.filter(m => m.isOverwork).map((m, i) => (
-                            <div key={i} className="bg-white rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-white">
-                                <div>
-                                    <h3 className="font-bold text-slate-900 text-[15px] mb-1">{m.name}</h3>
-                                    <p className="text-[13px] text-slate-500 font-medium">
-                                        Currently at {m.estimatedHours} hours this week (target: {m.userCapacity} hours)
-                                    </p>
+                        memberStats.filter(m => m.isOverwork).map((m, i) => {
+                            
+                            // USING THE WRAPPER FUNCTION TO AVOID TYPESCRIPT ERRORS
+                            const redistributeAction = handleRedistribute.bind(null, orgId, m.userId);
+
+                            return (
+                                <div key={i} className="bg-white rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-white">
+                                    <div>
+                                        <h3 className="font-bold text-slate-900 text-[15px] mb-1">{m.name}</h3>
+                                        <p className="text-[13px] text-slate-500 font-medium">
+                                            Currently at {m.estimatedHours} hours this week (target: {m.userCapacity} hours)
+                                        </p>
+                                    </div>
+                                    
+                                    <form action={redistributeAction}>
+                                        <Button type="submit" className="bg-[#f07167] hover:bg-[#e06258] text-white font-bold rounded-xl px-6 shadow-sm shadow-red-200 shrink-0 h-10">
+                                            Redistribute Tasks
+                                        </Button>
+                                    </form>
                                 </div>
-                                
-                                <form action={async () => {
-                                    'use server';
-                                    await redistributeTasks(orgId, m.userId); 
-                                }}>
-                                    <Button type="submit" className="bg-[#f07167] hover:bg-[#e06258] text-white font-bold rounded-xl px-6 shadow-sm shadow-red-200 shrink-0 h-10">
-                                        Redistribute Tasks
-                                    </Button>
-                                </form>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="bg-white/60 rounded-2xl p-6 text-center border border-white">
                             <p className="font-bold text-slate-700">All workloads are currently balanced.</p>
