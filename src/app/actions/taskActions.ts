@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 import { generateText } from "ai";
 import { ilmu, ILMU_MODEL } from "../../lib/ilmu";
 import { unwrapRelation } from "@/lib/supabase/relations";
+import {
+    buildChunkedPivotCandidatesContext,
+    clipForPrompt,
+    PIVOT_PROMPT_SNIPPET_MAX_CHARS,
+} from "@/lib/context-chunking";
 
 export async function updateTaskStatus(taskId: string, newStatus: string, orgId: string) {
     const supabase = await createClient();
@@ -211,12 +216,12 @@ export async function generatePivotStrategy(taskId: string, orgId: string) {
               "reasoning": "A short, 1-sentence explanation of why this person was chosen based on skills/workload."
             }`,
             prompt: `
-                Blocked Task: "${task.description}"
-                Blocker Reason: "${task.blocker_reason}"
+                Blocked Task: "${clipForPrompt(task.description, PIVOT_PROMPT_SNIPPET_MAX_CHARS)}"
+                Blocker Reason: "${clipForPrompt(task.blocker_reason, PIVOT_PROMPT_SNIPPET_MAX_CHARS)}"
                 Current Assignee: ${task.assigned_to}
 
                 Team Roster (Skills & Workload):
-                ${JSON.stringify(candidates, null, 2)}
+                ${buildChunkedPivotCandidatesContext(candidates)}
             `,
         });
 

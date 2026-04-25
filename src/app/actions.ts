@@ -5,6 +5,15 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { generateText } from "ai"
 import { ilmu, ILMU_MODEL } from "../lib/ilmu"
+import { ORCHESTRATION_AI_TIMEOUT_MS, ORCHESTRATION_GOAL_MAX_CHARS } from "../lib/orchestration-limits"
+import { buildChunkedTeamRosterContext } from "../lib/context-chunking"
+
+function isAbortLikeError(error: unknown): boolean {
+    if (error instanceof DOMException && error.name === "AbortError") return true
+    if (error instanceof Error && error.name === "AbortError") return true
+    const msg = error instanceof Error ? error.message.toLowerCase() : ""
+    return msg.includes("abort") || msg.includes("aborted") || msg.includes("signal has been aborted")
+}
 
 type TeamMember = {
     user_id: string;
@@ -15,8 +24,17 @@ type TeamMember = {
 export async function generateProject(formData: FormData) {
     const supabase = await createClient()
 
-    const vagueGoalText = formData.get('vagueGoalText') as string
     const orgId = formData.get('orgId') as string
+    const vagueGoalText = ((formData.get('vagueGoalText') as string) ?? '').trim()
+
+    if (!vagueGoalText) {
+        redirect(`/org/${orgId}/goals?aiError=${encodeURIComponent('Please enter a project goal.')}`)
+    }
+    if (vagueGoalText.length > ORCHESTRATION_GOAL_MAX_CHARS) {
+        redirect(
+            `/org/${orgId}/goals?aiError=${encodeURIComponent(`Project goal must be ${ORCHESTRATION_GOAL_MAX_CHARS} characters or fewer.`)}`,
+        )
+    }
 
     // 1. Context Gathering: Fetch team roster (gracefully handle missing skills table)
     let teamData: TeamMember[] = [];
@@ -101,9 +119,15 @@ export async function generateProject(formData: FormData) {
         console.log("Orchestrating with model:", ILMU_MODEL);
         console.log("Team Data for AI:", JSON.stringify(teamData, null, 2));
 
-        // 3. The AI Call: Using 'Opti' the AI Tech Lead
-        const { text } = await generateText({
+        // 3. The AI Call: Using 'Opti' the AI Tech Lead (bounded wait — SDK aborts the HTTP request)
+        const abortController = new AbortController()
+        const abortTimer = setTimeout(() => abortController.abort(), ORCHESTRATION_AI_TIMEOUT_MS)
+
+        let text: string
+        try {
+            const result = await generateText({
             model: ilmu.chat(ILMU_MODEL),
+            abortSignal: abortController.signal,
             system: `You are 'Opti', an AI Tech Lead. Break the user's project goal into 2-3 structured goals, and 2-4 micro-tasks per goal. 
             
             DISTRIBUTION RULES:
@@ -130,7 +154,7 @@ export async function generateProject(formData: FormData) {
             prompt: `Project Goal: "${vagueGoalText}"
             
             Team Roster (Context):
-            ${JSON.stringify(aiRoster, null, 2)}
+            ${buildChunkedTeamRosterContext(aiRoster)}
 
             Preferred assignee IDs:
             ${JSON.stringify(preferredAssigneeIds, null, 2)}
@@ -139,7 +163,11 @@ export async function generateProject(formData: FormData) {
             ${JSON.stringify(allowedAssigneeIds, null, 2)}
             
             Generate the structured roadmap based on the team's specific skills.`,
-        });
+            })
+            text = result.text
+        } finally {
+            clearTimeout(abortTimer)
+        }
 
         console.log("RAW AI RESPONSE:", text);
 
@@ -219,11 +247,15 @@ export async function generateProject(formData: FormData) {
             error instanceof Error
                 ? error.message
                 : "AI generation failed. Please retry shortly.";
-        const errorMessage = rawErrorMessage.includes("Bad Gateway")
-            ? "AI provider is temporarily unavailable (Bad Gateway). Please retry in a minute."
-            : rawErrorMessage;
-        const stack = error instanceof Error ? error.stack : '';
-        redirect(`/org/${orgId}/goals?aiError=${encodeURIComponent(errorMessage)}&aiStack=${encodeURIComponent(stack || '')}`);
+        const timedOut = isAbortLikeError(error)
+        const errorMessage = timedOut
+            ? "The AI did not respond in time and may be unavailable right now. Please try again in a moment."
+            : rawErrorMessage.includes("Bad Gateway")
+              ? "AI provider is temporarily unavailable (Bad Gateway). Please retry in a minute."
+              : rawErrorMessage;
+        const stack =
+            timedOut ? "" : error instanceof Error ? error.stack ?? "" : "";
+        redirect(`/org/${orgId}/goals?aiError=${encodeURIComponent(errorMessage)}&aiStack=${encodeURIComponent(stack)}`);
     }
 
     revalidatePath(`/org/${orgId}/goals`)

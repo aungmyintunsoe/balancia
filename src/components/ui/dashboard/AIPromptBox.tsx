@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2 } from "lucide-react";
 import { generateProject } from "../../../app/actions";
+import { ORCHESTRATION_GOAL_MAX_CHARS } from "@/lib/orchestration-limits";
 
 import { useState, useEffect, useRef } from "react";
 import { useOptiChrome } from "@/components/OptiChromeContext";
@@ -29,7 +30,7 @@ function AiGeneratingBridge() {
     return null;
 }
 
-function SubmitButton() {
+function SubmitButton({ blocked }: { blocked: boolean }) {
     const { pending } = useFormStatus();
     const [messageIndex, setMessageIndex] = useState(0);
     const messages = [
@@ -51,7 +52,7 @@ function SubmitButton() {
     return (
         <Button 
             type="submit" 
-            disabled={pending} 
+            disabled={pending || blocked} 
             className="w-full bg-[#8ef04d] hover:bg-[#7ce03c] text-white font-bold h-12 rounded-xl transition-all active:scale-[0.98] border-none shadow-sm"
         >
             {pending ? (
@@ -70,6 +71,11 @@ function SubmitButton() {
 }
 
 export default function AIPromptBox({ orgId }: { orgId: string }) {
+    const [goalText, setGoalText] = useState("");
+    const max = ORCHESTRATION_GOAL_MAX_CHARS;
+    const trimmedLen = goalText.trim().length;
+    const submitBlocked = trimmedLen === 0;
+
     return (
         <form action={generateProject} className="space-y-4">
             <input type="hidden" name="orgId" value={orgId} />
@@ -78,15 +84,25 @@ export default function AIPromptBox({ orgId }: { orgId: string }) {
             <div className="space-y-2">
                 <Textarea
                     name="vagueGoalText"
+                    value={goalText}
+                    onChange={(e) => setGoalText(e.target.value.slice(0, max))}
+                    maxLength={max}
                     placeholder="e.g. Build a landing page for our new soda brand 'Fizzo' with a signup form."
                     className="min-h-[120px] text-lg resize-none bg-[#f8faf9] border-none focus-visible:ring-[#8ef04d] rounded-2xl p-5 shadow-inner"
                     required
+                    aria-describedby="goal-char-count"
                 />
+                <p
+                    id="goal-char-count"
+                    className="text-xs text-right font-medium tabular-nums text-slate-500"
+                >
+                    {goalText.length}/{max}
+                </p>
             </div>
 
-            <SubmitButton />
+            <SubmitButton blocked={submitBlocked} />
             <p className="text-[10px] text-center text-slate-400 font-medium tracking-wide">
-                AI will distribute tasks based on member skills and availability.
+                AI will distribute tasks based on member skills and availability. Orchestration can take up to a couple of minutes.
             </p>
         </form>
     );
