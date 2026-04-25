@@ -46,6 +46,7 @@ export const metadata: Metadata = {
   },
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -59,7 +60,6 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      {/* --- ADDED FONT-SANS AND TEXT COLOR HERE --- */}
       <body className="min-h-full flex flex-col font-sans text-slate-900 overflow-x-hidden">
         {children}
       </body>

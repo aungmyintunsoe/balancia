@@ -6,7 +6,7 @@ export default function LandingPage() {
     return (
         <div className="min-h-screen bg-[#f8faf9] selection:bg-[#8CE065]/20 selection:text-[#5cb83a] overflow-x-hidden">
             {/* Header / Nav */}
-            <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-[#8CE065]/10">
+            <nav className="fixed top-0 w-full z-50 bg-white backdrop-blur-xl border-b border-[#8CE065]/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <img src="/logo.png" alt="Balancia Logo" className="h-8 sm:h-10 w-auto object-contain" />

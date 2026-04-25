@@ -261,7 +261,7 @@ export default async function AnalyticsPage(props: { params: Promise<{ orgId: st
                 <div className="space-y-4">
                     {memberStats.filter(m => m.isOverwork).length > 0 ? (
                         memberStats.filter(m => m.isOverwork).map((m, i) => (
-                            <div key={i} className="bg-white/80 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-white">
+                            <div key={i} className="bg-white rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-white">
                                 <div>
                                     <h3 className="font-bold text-slate-900 text-[15px] mb-1">{m.name}</h3>
                                     <p className="text-[13px] text-slate-500 font-medium">

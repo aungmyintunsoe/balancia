@@ -5,7 +5,6 @@ import Link from "next/link";
 import Tilt from "react-parallax-tilt";
 import { cn } from "@/lib/utils";
 import { useOptiChrome } from "@/components/OptiChromeContext";
-
 export function OrgSidebarBrand({ orgId }: { orgId: string }) {
   const { aiGenerating, goalNodKey, taskCompleteSpinKey } = useOptiChrome();
 
